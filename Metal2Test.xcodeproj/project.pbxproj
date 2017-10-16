@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		934D5F581F920C1300F9FEAE /* Shaders.metal in Sources */ = {isa = PBXBuildFile; fileRef = 934D5F571F920C1300F9FEAE /* Shaders.metal */; };
 		934EEEEA1F8C689F00C9C3A0 /* main.swift in Sources */ = {isa = PBXBuildFile; fileRef = 934EEEE91F8C689F00C9C3A0 /* main.swift */; };
 /* End PBXBuildFile section */
 
@@ -23,6 +24,9 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		934D5F561F920C0500F9FEAE /* ShaderTypes.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = ShaderTypes.h; sourceTree = "<group>"; };
+		934D5F571F920C1300F9FEAE /* Shaders.metal */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.metal; path = Shaders.metal; sourceTree = "<group>"; };
+		934D5F591F920F1900F9FEAE /* BridgeHeader.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = BridgeHeader.h; sourceTree = "<group>"; };
 		934EEEE61F8C689F00C9C3A0 /* Metal2Test */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = Metal2Test; sourceTree = BUILT_PRODUCTS_DIR; };
 		934EEEE91F8C689F00C9C3A0 /* main.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = main.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
@@ -58,6 +62,9 @@
 			isa = PBXGroup;
 			children = (
 				934EEEE91F8C689F00C9C3A0 /* main.swift */,
+				934D5F571F920C1300F9FEAE /* Shaders.metal */,
+				934D5F561F920C0500F9FEAE /* ShaderTypes.h */,
+				934D5F591F920F1900F9FEAE /* BridgeHeader.h */,
 			);
 			path = Metal2Test;
 			sourceTree = "<group>";
@@ -120,6 +127,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				934D5F581F920C1300F9FEAE /* Shaders.metal in Sources */,
 				934EEEEA1F8C689F00C9C3A0 /* main.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -238,6 +246,7 @@
 			buildSettings = {
 				CODE_SIGN_STYLE = Automatic;
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_OBJC_BRIDGING_HEADER = Metal2Test/BridgeHeader.h;
 				SWIFT_VERSION = 4.0;
 			};
 			name = Debug;
@@ -247,6 +256,7 @@
 			buildSettings = {
 				CODE_SIGN_STYLE = Automatic;
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_OBJC_BRIDGING_HEADER = Metal2Test/BridgeHeader.h;
 				SWIFT_VERSION = 4.0;
 			};
 			name = Release;
