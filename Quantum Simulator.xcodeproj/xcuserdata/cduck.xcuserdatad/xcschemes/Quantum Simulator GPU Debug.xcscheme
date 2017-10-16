@@ -15,9 +15,9 @@
             <BuildableReference
                BuildableIdentifier = "primary"
                BlueprintIdentifier = "934EEEE51F8C689F00C9C3A0"
-               BuildableName = "Metal2Test"
-               BlueprintName = "Metal2Test"
-               ReferencedContainer = "container:Metal2Test.xcodeproj">
+               BuildableName = "Quantum Simulator"
+               BlueprintName = "Quantum Simulator"
+               ReferencedContainer = "container:Quantum Simulator.xcodeproj">
             </BuildableReference>
          </BuildActionEntry>
       </BuildActionEntries>
@@ -34,9 +34,9 @@
          <BuildableReference
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "934EEEE51F8C689F00C9C3A0"
-            BuildableName = "Metal2Test"
-            BlueprintName = "Metal2Test"
-            ReferencedContainer = "container:Metal2Test.xcodeproj">
+            BuildableName = "Quantum Simulator"
+            BlueprintName = "Quantum Simulator"
+            ReferencedContainer = "container:Quantum Simulator.xcodeproj">
          </BuildableReference>
       </MacroExpansion>
       <AdditionalOptions>
@@ -58,9 +58,9 @@
          <BuildableReference
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "934EEEE51F8C689F00C9C3A0"
-            BuildableName = "Metal2Test"
-            BlueprintName = "Metal2Test"
-            ReferencedContainer = "container:Metal2Test.xcodeproj">
+            BuildableName = "Quantum Simulator"
+            BlueprintName = "Quantum Simulator"
+            ReferencedContainer = "container:Quantum Simulator.xcodeproj">
          </BuildableReference>
       </BuildableProductRunnable>
       <AdditionalOptions>
@@ -77,9 +77,9 @@
          <BuildableReference
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "934EEEE51F8C689F00C9C3A0"
-            BuildableName = "Metal2Test"
-            BlueprintName = "Metal2Test"
-            ReferencedContainer = "container:Metal2Test.xcodeproj">
+            BuildableName = "Quantum Simulator"
+            BlueprintName = "Quantum Simulator"
+            ReferencedContainer = "container:Quantum Simulator.xcodeproj">
          </BuildableReference>
       </BuildableProductRunnable>
    </ProfileAction>

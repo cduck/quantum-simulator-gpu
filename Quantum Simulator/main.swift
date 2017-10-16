@@ -9,6 +9,11 @@
 import Foundation
 import Metal
 import simd
+#if os(Linux)
+    import Glibc
+#else
+    import Darwin.C
+#endif
 
 
 //let alignedUniformsSize = (MemoryLayout<Uniforms>.size & ~0xFF) + 0x100
@@ -170,8 +175,15 @@ func main() {
     let numElementsSummed = dispatchRecursive(depth: numSumStages, dispatchIndex: 0)
     assert(numElementsSummed == numPathDispatches, "Dispatch schedule logic error")
 
-    // Start running on GPU
+    // Finish encoding
     encoder.endEncoding()
+
+    // Start running on GPU
+    print("\nRunning on GPU")
+    // Delay so the message can be displayed before the UI freezes during GPU compute
+    fflush(stdout)
+    usleep(200_000)
+
     let startTime = mach_absolute_time()
     commandBuffer.commit()
     commandBuffer.waitUntilCompleted()
@@ -179,7 +191,7 @@ func main() {
     let duration = Double(endTime - startTime) / Double(NSEC_PER_SEC)
 
     // After completion
-    print("\nGPU time: \(duration) seconds")
+    print("GPU time: \(duration) seconds")
 
     // Final sum
     var sum = vector_float4()

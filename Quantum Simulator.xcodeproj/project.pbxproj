@@ -27,7 +27,7 @@
 		934D5F561F920C0500F9FEAE /* ShaderTypes.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = ShaderTypes.h; sourceTree = "<group>"; };
 		934D5F571F920C1300F9FEAE /* Shaders.metal */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.metal; path = Shaders.metal; sourceTree = "<group>"; };
 		934D5F591F920F1900F9FEAE /* BridgeHeader.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = BridgeHeader.h; sourceTree = "<group>"; };
-		934EEEE61F8C689F00C9C3A0 /* Metal2Test */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = Metal2Test; sourceTree = BUILT_PRODUCTS_DIR; };
+		934EEEE61F8C689F00C9C3A0 /* Quantum Simulator */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = "Quantum Simulator"; sourceTree = BUILT_PRODUCTS_DIR; };
 		934EEEE91F8C689F00C9C3A0 /* main.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = main.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -45,7 +45,7 @@
 		934EEEDD1F8C689F00C9C3A0 = {
 			isa = PBXGroup;
 			children = (
-				934EEEE81F8C689F00C9C3A0 /* Metal2Test */,
+				934EEEE81F8C689F00C9C3A0 /* Quantum Simulator */,
 				934EEEE71F8C689F00C9C3A0 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -53,12 +53,12 @@
 		934EEEE71F8C689F00C9C3A0 /* Products */ = {
 			isa = PBXGroup;
 			children = (
-				934EEEE61F8C689F00C9C3A0 /* Metal2Test */,
+				934EEEE61F8C689F00C9C3A0 /* Quantum Simulator */,
 			);
 			name = Products;
 			sourceTree = "<group>";
 		};
-		934EEEE81F8C689F00C9C3A0 /* Metal2Test */ = {
+		934EEEE81F8C689F00C9C3A0 /* Quantum Simulator */ = {
 			isa = PBXGroup;
 			children = (
 				934EEEE91F8C689F00C9C3A0 /* main.swift */,
@@ -66,15 +66,15 @@
 				934D5F561F920C0500F9FEAE /* ShaderTypes.h */,
 				934D5F591F920F1900F9FEAE /* BridgeHeader.h */,
 			);
-			path = Metal2Test;
+			path = "Quantum Simulator";
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
-		934EEEE51F8C689F00C9C3A0 /* Metal2Test */ = {
+		934EEEE51F8C689F00C9C3A0 /* Quantum Simulator */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = 934EEEED1F8C689F00C9C3A0 /* Build configuration list for PBXNativeTarget "Metal2Test" */;
+			buildConfigurationList = 934EEEED1F8C689F00C9C3A0 /* Build configuration list for PBXNativeTarget "Quantum Simulator" */;
 			buildPhases = (
 				934EEEE21F8C689F00C9C3A0 /* Sources */,
 				934EEEE31F8C689F00C9C3A0 /* Frameworks */,
@@ -84,9 +84,9 @@
 			);
 			dependencies = (
 			);
-			name = Metal2Test;
+			name = "Quantum Simulator";
 			productName = Metal2Test;
-			productReference = 934EEEE61F8C689F00C9C3A0 /* Metal2Test */;
+			productReference = 934EEEE61F8C689F00C9C3A0 /* Quantum Simulator */;
 			productType = "com.apple.product-type.tool";
 		};
 /* End PBXNativeTarget section */
@@ -105,7 +105,7 @@
 					};
 				};
 			};
-			buildConfigurationList = 934EEEE11F8C689F00C9C3A0 /* Build configuration list for PBXProject "Metal2Test" */;
+			buildConfigurationList = 934EEEE11F8C689F00C9C3A0 /* Build configuration list for PBXProject "Quantum Simulator" */;
 			compatibilityVersion = "Xcode 8.0";
 			developmentRegion = en;
 			hasScannedForEncodings = 0;
@@ -117,7 +117,7 @@
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
-				934EEEE51F8C689F00C9C3A0 /* Metal2Test */,
+				934EEEE51F8C689F00C9C3A0 /* Quantum Simulator */,
 			);
 		};
 /* End PBXProject section */
@@ -246,7 +246,7 @@
 			buildSettings = {
 				CODE_SIGN_STYLE = Automatic;
 				PRODUCT_NAME = "$(TARGET_NAME)";
-				SWIFT_OBJC_BRIDGING_HEADER = Metal2Test/BridgeHeader.h;
+				SWIFT_OBJC_BRIDGING_HEADER = "Quantum Simulator/BridgeHeader.h";
 				SWIFT_VERSION = 4.0;
 			};
 			name = Debug;
@@ -256,7 +256,7 @@
 			buildSettings = {
 				CODE_SIGN_STYLE = Automatic;
 				PRODUCT_NAME = "$(TARGET_NAME)";
-				SWIFT_OBJC_BRIDGING_HEADER = Metal2Test/BridgeHeader.h;
+				SWIFT_OBJC_BRIDGING_HEADER = "Quantum Simulator/BridgeHeader.h";
 				SWIFT_VERSION = 4.0;
 			};
 			name = Release;
@@ -264,7 +264,7 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
-		934EEEE11F8C689F00C9C3A0 /* Build configuration list for PBXProject "Metal2Test" */ = {
+		934EEEE11F8C689F00C9C3A0 /* Build configuration list for PBXProject "Quantum Simulator" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				934EEEEB1F8C689F00C9C3A0 /* Debug */,
@@ -273,7 +273,7 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		934EEEED1F8C689F00C9C3A0 /* Build configuration list for PBXNativeTarget "Metal2Test" */ = {
+		934EEEED1F8C689F00C9C3A0 /* Build configuration list for PBXNativeTarget "Quantum Simulator" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				934EEEEE1F8C689F00C9C3A0 /* Debug */,
