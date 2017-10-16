@@ -23,12 +23,13 @@ pathKernel(constant MeasureConfig &measureConfig [[buffer(0)]],
 {
     SumPair sumTotal = SumPair { float4(0, 0, 0, 0) };
 
-    for (int p=0; p < 4; p++) {
+    const constexpr int numPathsPerThread = 1 << 8;
+    for (int p=0; p < numPathsPerThread; p++) {
         int a = dispatchConfig.restOfChoices;
         for (int i=0; i < measureConfig.numGates; i++) {
             a += gates[i].primaryBit;
         }
-        sumTotal.val01 += float4(1.0f, 2.0f, 0.0f, dispatchConfig.restOfChoices);
+        sumTotal.val01 += float4(1.0f, a, 0.0f, dispatchConfig.restOfChoices);
     }
 
     sumOutput[id] = sumTotal;
@@ -39,7 +40,7 @@ void sumKernel(device SumPair *inputArray,
                device SumPair *sumOutput,
                uint   id)
 {
-    const constexpr int numSumsPerThread = 1 << 8;
+    const constexpr int numSumsPerThread = 1 << 6;
     device SumPair *start = inputArray + numSumsPerThread * id;
 
     SumPair total = SumPair { float4(0, 0, 0, 0) };
@@ -63,4 +64,7 @@ SUM_KERNEL_STAGE(1)
 SUM_KERNEL_STAGE(2)
 SUM_KERNEL_STAGE(3)
 SUM_KERNEL_STAGE(4)
+SUM_KERNEL_STAGE(5)
+SUM_KERNEL_STAGE(6)
+SUM_KERNEL_STAGE(7)
 

@@ -45,11 +45,11 @@ func main() {
     // Problem-specific calculations
     let numPaths = 1 << 32  // Don't set this too high (more than 32) or the OS might crash
     let numBits = 16
-    let numPathsPerThread = 1 << 5
-    let numConcurrentPathThreads = 1 << 17  // 1<<17 is optimal
+    let numPathsPerThread = 1 << 8  // Also set in shader
+    let numSumsPerThread = 1 << 6  // Also set in shader
+    let numConcurrentPathThreads = 1 << 16  // 1<<17 is optimal
     let numPathsAtATime = numConcurrentPathThreads * numPathsPerThread
     let numPathDispatches = numPaths / numPathsAtATime
-    let numSumsPerThread = 1 << 8
     let numConcurrentSums = numConcurrentPathThreads / numSumsPerThread
 
     // Calculate depth of sums
