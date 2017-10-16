@@ -15,18 +15,52 @@ using namespace metal;
 
 
 kernel void
-pathKernel(constant GroupConfig &groupConfig [[buffer(0)]],
-           constant GateInstance *gates [[buffer(1)]],
-           device   SumPair *sumOutput [[buffer(2)]],
-           uint     gid [[thread_position_in_grid]])
+pathKernel(constant MeasureConfig &measureConfig [[buffer(0)]],
+           constant DispatchConfig &dispatchConfig [[buffer(1)]],
+           constant GateInstance *gates [[buffer(2)]],
+           device   SumPair *sumOutput [[buffer(3)]],
+           uint     id [[thread_position_in_grid]])
 {
-    int a = 0;
-    for (int i=0; i<groupConfig.numGates; i++) {
-        a += gates[i].primaryBit;
+    SumPair sumTotal = SumPair { float4(0, 0, 0, 0) };
+
+    for (int p=0; p < 4; p++) {
+        int a = dispatchConfig.restOfChoices;
+        for (int i=0; i < measureConfig.numGates; i++) {
+            a += gates[i].primaryBit;
+        }
+        sumTotal.val01 += float4(1.0f, 2.0f, 0.0f, dispatchConfig.restOfChoices);
     }
-    sumOutput[gid].val01 = float4(1.0f, gid, a, groupConfig.restOfChoices);
+
+    sumOutput[id] = sumTotal;
 }
 
-//kernel void
-//sumKernel(
+// General sum kernel
+void sumKernel(device SumPair *inputArray,
+               device SumPair *sumOutput,
+               uint   id)
+{
+    const constexpr int numSumsPerThread = 1 << 8;
+    device SumPair *start = inputArray + numSumsPerThread * id;
+
+    SumPair total = SumPair { float4(0, 0, 0, 0) };
+    for (int i=0; i < numSumsPerThread; i++) {
+        total.val01 += start[i].val01;
+    }
+
+    sumOutput[id] = total;
+}
+
+// Define a sum kernel specific to each sum stage
+#define SUM_KERNEL_STAGE(STAGE) \
+kernel void \
+sumKernel ## STAGE(device SumPair *inputArray [[buffer(STAGE + 3)]], \
+                   device SumPair *sumOutput [[buffer(STAGE + 4)]], \
+                   uint   id [[thread_position_in_grid]]) { \
+    sumKernel(inputArray, sumOutput, id); \
+}
+SUM_KERNEL_STAGE(0)
+SUM_KERNEL_STAGE(1)
+SUM_KERNEL_STAGE(2)
+SUM_KERNEL_STAGE(3)
+SUM_KERNEL_STAGE(4)
 

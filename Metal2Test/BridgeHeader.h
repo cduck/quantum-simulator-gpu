@@ -11,8 +11,4 @@
 
 #import "ShaderTypes.h"
 
-const unsigned int sizeof_GateInstance = sizeof(GateInstance);
-const unsigned int sizeof_GroupConfig = sizeof(GroupConfig);
-const unsigned int sizeof_SumPair = sizeof(SumPair);
-
 #endif /* BridgeHeader_h */

@@ -29,8 +29,12 @@ typedef struct {
 
 typedef struct {
     int numGates;
+} MeasureConfig;
+
+
+typedef struct {
     unsigned int restOfChoices;
-} GroupConfig;
+} DispatchConfig;
 
 
 typedef struct {
