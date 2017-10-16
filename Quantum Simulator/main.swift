@@ -18,7 +18,7 @@ import simd
 
 //let alignedUniformsSize = (MemoryLayout<Uniforms>.size & ~0xFF) + 0x100
 
-func main() {
+func simulateCircuit(_ circuit: CircuitDetails) {
     let devices = MTLCopyAllDevices()
     print("Number of devices = \(MTLCopyAllDevices().count)")
 
@@ -48,12 +48,17 @@ func main() {
     let maxSumStages = sumPipelineStateList.count
 
     // Problem-specific calculations
-    let numPaths = 1 << 32  // Don't set this too high (more than 32) or the OS might crash
+    let maxHadamardCount = 28
+    if circuit.hadamardCount > maxHadamardCount {
+        print("Warning: There are too many Hadamard gates (\(circuit.hadamardCount) > \(maxHadamardCount)).  The simulation may take a long time.")
+    }
+    let numPathsActual = 1 << circuit.hadamardCount  // Don't set this too high (more than 32) or the OS might crash
     let numBits = 16
     let numPathsPerThread = 1 << 8  // Also set in shader
     let numSumsPerThread = 1 << 6  // Also set in shader
     let numConcurrentPathThreads = 1 << 16  // 1<<17 is optimal
     let numPathsAtATime = numConcurrentPathThreads * numPathsPerThread
+    let numPaths = (numPathsActual < numPathsAtATime ? numPathsAtATime : numPathsActual)
     let numPathDispatches = numPaths / numPathsAtATime
     let numConcurrentSums = numConcurrentPathThreads / numSumsPerThread
 
@@ -71,17 +76,15 @@ func main() {
     }
 
     // Create kernel inputs
-    let gateArray = [
-        GateInstance.init(type: 0, primaryBit: 0, controlBit: 1, control2Bit: 2),
-        GateInstance.init(type: 0, primaryBit: 1, controlBit: 1, control2Bit: 2),
-        GateInstance.init(type: 0, primaryBit: 2, controlBit: 1, control2Bit: 2),
-        GateInstance.init(type: 0, primaryBit: 3, controlBit: 1, control2Bit: 2),
-    ]
+    let gateArray: [GateInstance] = circuit.gates
+    let measureBitIndex = 1
     let measureConfigArray = (0..<1).map { (_) -> MeasureConfig in
-        return MeasureConfig.init(numGates: CInt(gateArray.count))
+        return MeasureConfig.init(numGates: CInt(circuit.measureIndexList[measureBitIndex]+1),
+                                  matchMask: CUnsignedInt(~(~Int(0) << measureBitIndex)),
+                                  matchMeasure: 0b1)
     }
     let dispatchConfigArray = (0..<numPathDispatches).map { (i) -> DispatchConfig in
-        return DispatchConfig.init(restOfChoices: CUnsignedInt(i))
+        return DispatchConfig.init(restOfChoices: CUnsignedInt(i * numConcurrentPathThreads))
     }
 
     // Setup buffer, encoder
@@ -249,5 +252,8 @@ func main() {
 
 
 print("\nStart\n")
-main();
+let filePath = "/Users/cduck/dev/Quantum/simulation/simple.circuit"
+if let circuit = loadCircuit(filePath: filePath) {
+    simulateCircuit(circuit);
+}
 print("\nFinished\n")

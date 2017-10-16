@@ -23,17 +23,67 @@ pathKernel(constant MeasureConfig &measureConfig [[buffer(0)]],
 {
     SumPair sumTotal = SumPair { float4(0, 0, 0, 0) };
 
-    const constexpr int numPathsPerThread = 1 << 8;
+    // Calculate many paths per kernel thread to increase overall speed
+    const constexpr int expPathsPerThread = 8;
+    const constexpr int numPathsPerThread = 1 << expPathsPerThread;
     for (int p=0; p < numPathsPerThread; p++) {
-        int a = dispatchConfig.restOfChoices;
+
+        // Calcualte a single path through the gates
+        uint choices = (((dispatchConfig.restOfChoices ^ id) << expPathsPerThread) | p);
+        uint matchMask = measureConfig.matchMask;
+        uint matchMeasure = measureConfig.matchMeasure;
+        uint state = 0;  // TODO: Larger state
+        float2 pathPhase = float2(0.0f, 0.0f);
+        bool measurementsMatch = true;
+        bool lastMeasurement = false;
+
         for (int i=0; i < measureConfig.numGates; i++) {
-            a += gates[i].primaryBit;
+            // Apply a single gate
+            GateInstance gate = gates[i];
+            bool choice = gate.useChoice && (choices & 0x1);
+            if (gate.useChoice) { choice >>= 1; }  // Consume choice from list
+            bool doToggle = choice ^ gate.doToggle;
+            bool addPhase = choice || ((state >> gate.primaryBit) & 0x1);
+            // TODO: Support SWAP and CSWAP gates
+            if ((gate.controlBit == 255  || ((state >> gate.controlBit)  & 0x1)) &&
+                (gate.control2Bit == 255 || ((state >> gate.control2Bit) & 0x1))) {
+                if (doToggle) {
+                    state ^= 0x1 << gate.primaryBit;
+                }
+                if (addPhase) {
+                    pathPhase += gate.phase;
+                }
+            }
+            if (gate.doMeasure) {
+                lastMeasurement = (state >> gate.primaryBit) & 0x1;
+                if (matchMask & 0x1) {
+                    measurementsMatch = measurementsMatch && lastMeasurement == (matchMeasure & 0x1);
+                }
+                matchMask >>= 1;
+                matchMeasure >>= 1;
+            }
         }
-        sumTotal.val01 += float4(1.0f, a, 0.0f, dispatchConfig.restOfChoices);
+        
+        // Make measurement of this path, adding the result to the total sum
+        if (measurementsMatch) {
+            if (lastMeasurement) {
+                // Measure one
+                sumTotal.val01 += float4(0.0f, 0.0f, pathPhase);
+            } else {
+                // Measure zero
+                sumTotal.val01 += float4(pathPhase, 0.0f, 0.0f);
+            }
+        } else {
+            // Previous measurement did not match, don't add to sum
+        }
     }
 
     sumOutput[id] = sumTotal;
 }
+
+
+
+
 
 // General sum kernel
 void sumKernel(device SumPair *inputArray,

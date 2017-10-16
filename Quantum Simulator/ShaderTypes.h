@@ -20,15 +20,21 @@
 
 
 typedef struct {
-    unsigned short type;
-    unsigned short primaryBit;
-    unsigned short controlBit;
-    unsigned short control2Bit;
+    vector_float2 phase;
+    unsigned char primaryBit;
+    unsigned char controlBit;
+    unsigned char control2Bit;
+    bool useChoice : 1;
+    bool doToggle : 1;
+    bool doMeasure : 1;
+    
 } GateInstance;
 
 
 typedef struct {
     int numGates;
+    unsigned int matchMask;  // TODO: Longer state
+    unsigned int matchMeasure;
 } MeasureConfig;
 
 

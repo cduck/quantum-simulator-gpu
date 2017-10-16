@@ -9,6 +9,7 @@
 /* Begin PBXBuildFile section */
 		934D5F581F920C1300F9FEAE /* Shaders.metal in Sources */ = {isa = PBXBuildFile; fileRef = 934D5F571F920C1300F9FEAE /* Shaders.metal */; };
 		934EEEEA1F8C689F00C9C3A0 /* main.swift in Sources */ = {isa = PBXBuildFile; fileRef = 934EEEE91F8C689F00C9C3A0 /* main.swift */; };
+		939705D21F951571004A498D /* loadCircuit.swift in Sources */ = {isa = PBXBuildFile; fileRef = 939705D11F951570004A498D /* loadCircuit.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -29,6 +30,7 @@
 		934D5F591F920F1900F9FEAE /* BridgeHeader.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = BridgeHeader.h; sourceTree = "<group>"; };
 		934EEEE61F8C689F00C9C3A0 /* Quantum Simulator */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = "Quantum Simulator"; sourceTree = BUILT_PRODUCTS_DIR; };
 		934EEEE91F8C689F00C9C3A0 /* main.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = main.swift; sourceTree = "<group>"; };
+		939705D11F951570004A498D /* loadCircuit.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = loadCircuit.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -62,6 +64,7 @@
 			isa = PBXGroup;
 			children = (
 				934EEEE91F8C689F00C9C3A0 /* main.swift */,
+				939705D11F951570004A498D /* loadCircuit.swift */,
 				934D5F571F920C1300F9FEAE /* Shaders.metal */,
 				934D5F561F920C0500F9FEAE /* ShaderTypes.h */,
 				934D5F591F920F1900F9FEAE /* BridgeHeader.h */,
@@ -127,6 +130,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				939705D21F951571004A498D /* loadCircuit.swift in Sources */,
 				934D5F581F920C1300F9FEAE /* Shaders.metal in Sources */,
 				934EEEEA1F8C689F00C9C3A0 /* main.swift in Sources */,
 			);
