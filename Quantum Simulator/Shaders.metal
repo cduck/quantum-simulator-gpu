@@ -1,6 +1,6 @@
 //
 //  Shaders.metal
-//  Metal2Test
+//  Quantum Simulator
 //
 //  Created by Casey Duckering on 2017-10-14.
 //  Copyright © 2017 Casey Duckering. All rights reserved.
