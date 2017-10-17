@@ -64,7 +64,7 @@ let gateInitializers: Dictionary<String, ([Float],[Int]) throws -> GateInstance>
     "M": { (params, args) throws -> GateInstance in
         if params.count != 0 { throw ParseCircuitError.InvalidGateParamCount }
         if args.count != 1 { throw ParseCircuitError.InvalidGateParamCount }
-        return GateInstance.init(phase: float2(0, 0),
+        return GateInstance.init(phase: float2(1, 0),
                                  primaryBit: CUnsignedChar(args[0]),
                                  controlBit: NO_CONTROL,
                                  control2Bit: NO_CONTROL,
@@ -86,7 +86,7 @@ let gateInitializers: Dictionary<String, ([Float],[Int]) throws -> GateInstance>
     "I": { (params, args) throws -> GateInstance in
         //if params.count != 0 { throw ParseCircuitError.InvalidGateParamCount }
         //if args.count != 1 { throw ParseCircuitError.InvalidGateParamCount }
-        return GateInstance.init(phase: float2(0, 0),
+        return GateInstance.init(phase: float2(1, 0),
                                  primaryBit: 0,
                                  controlBit: NO_CONTROL,
                                  control2Bit: NO_CONTROL,
@@ -97,7 +97,7 @@ let gateInitializers: Dictionary<String, ([Float],[Int]) throws -> GateInstance>
     "X": { (params, args) throws -> GateInstance in
         if params.count != 0 { throw ParseCircuitError.InvalidGateParamCount }
         if args.count != 1 { throw ParseCircuitError.InvalidGateParamCount }
-        return GateInstance.init(phase: float2(0, 0),
+        return GateInstance.init(phase: float2(1, 0),
                                  primaryBit: CUnsignedChar(args[0]),
                                  controlBit: NO_CONTROL,
                                  control2Bit: NO_CONTROL,

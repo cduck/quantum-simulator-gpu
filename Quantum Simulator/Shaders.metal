@@ -14,6 +14,10 @@
 using namespace metal;
 
 
+float2 complexProduct(float2 a, float2 b) {
+    return float2(a.x * b.x - a.y * b.y, a.x * b.y + a.y * b.x);
+}
+
 kernel void
 pathKernel(constant MeasureConfig &measureConfig [[buffer(0)]],
            constant DispatchConfig &dispatchConfig [[buffer(1)]],
@@ -33,7 +37,7 @@ pathKernel(constant MeasureConfig &measureConfig [[buffer(0)]],
         uint matchMask = measureConfig.matchMask;
         uint matchMeasure = measureConfig.matchMeasure;
         uint state = 0;  // TODO: Larger state
-        float2 pathPhase = float2(0.0f, 0.0f);
+        float2 pathPhase = float2(1.0f, 0.0f);
         bool measurementsMatch = true;
         bool lastMeasurement = false;
 
@@ -51,7 +55,8 @@ pathKernel(constant MeasureConfig &measureConfig [[buffer(0)]],
                     state ^= 0x1 << gate.primaryBit;
                 }
                 if (addPhase) {
-                    pathPhase += gate.phase;
+                    // Add phase by multiplying complex numbers
+                    pathPhase = complexProduct(pathPhase, gate.phase);
                 }
             }
             if (gate.doMeasure) {
@@ -80,8 +85,6 @@ pathKernel(constant MeasureConfig &measureConfig [[buffer(0)]],
 
     sumOutput[id] = sumTotal;
 }
-
-
 
 
 
