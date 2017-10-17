@@ -18,7 +18,8 @@ import simd
 
 //let alignedUniformsSize = (MemoryLayout<Uniforms>.size & ~0xFF) + 0x100
 
-func simulateCircuit(_ circuit: CircuitDetails) {
+func simulateCircuit(_ circuit: CircuitDetails,
+                     measureBitIndex: Int, measureMatchEarlier: Int) {
     let devices = MTLCopyAllDevices()
     print("Number of devices = \(MTLCopyAllDevices().count)")
 
@@ -51,6 +52,8 @@ func simulateCircuit(_ circuit: CircuitDetails) {
     let maxHadamardCount = 28
     if circuit.hadamardCount > maxHadamardCount {
         print("Warning: There are too many Hadamard gates (\(circuit.hadamardCount) > \(maxHadamardCount)).  The simulation may take a long time.")
+        print("Press Enter to continue.")
+        let _ = readLine()
     }
     let numPathsActual = 1 << circuit.hadamardCount  // Don't set this too high (more than 32) or the OS might crash
     let numBits = 16
@@ -77,11 +80,10 @@ func simulateCircuit(_ circuit: CircuitDetails) {
 
     // Create kernel inputs
     let gateArray: [GateInstance] = circuit.gates
-    let measureBitIndex = 1
     let measureConfigArray = (0..<1).map { (_) -> MeasureConfig in
         return MeasureConfig.init(numGates: CInt(circuit.measureIndexList[measureBitIndex]+1),
                                   matchMask: CUnsignedInt(~(~Int(0) << measureBitIndex)),
-                                  matchMeasure: 0b1)
+                                  matchMeasure: CUnsignedInt(measureMatchEarlier))
     }
     let dispatchConfigArray = (0..<numPathDispatches).map { (i) -> DispatchConfig in
         return DispatchConfig.init(restOfChoices: CUnsignedInt(i * numConcurrentPathThreads))
@@ -245,15 +247,22 @@ func simulateCircuit(_ circuit: CircuitDetails) {
         """)
     }*/
 
-    print("""
-    \nResult: \(sum)
-    """)
+    print("Final sum: \(sum)")
+
+    let pZero = sum.x * sum.x + sum.y * sum.y  // sum.xy * conj(sum.xy)
+    let pOne  = sum.z * sum.z + sum.w * sum.w
+    let probZero = pZero / (pZero + pOne)  // Normalize probabilities
+    let probOne = pOne / (pZero + pOne)
+    print("")
+    print("Probability of measureing zero: \(probZero)")
+    print("Probability of measureing one:  \(probOne)")
 }
 
 
 print("\nStart\n")
 let filePath = "/Users/cduck/dev/Quantum/simulation/simple.circuit"
+//let filePath = "/Users/cduck/dev/Quantum/simulation/test.circuit"
 if let circuit = loadCircuit(filePath: filePath) {
-    simulateCircuit(circuit);
+    simulateCircuit(circuit, measureBitIndex: 2, measureMatchEarlier: 0b11);
 }
 print("\nFinished\n")

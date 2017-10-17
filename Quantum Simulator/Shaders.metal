@@ -34,7 +34,7 @@ pathKernel(constant MeasureConfig &measureConfig [[buffer(0)]],
 
         // Calcualte a single path through the gates
         uint choices = (((dispatchConfig.restOfChoices ^ id) << expPathsPerThread) | p);
-        uint matchMask = measureConfig.matchMask;
+        uint matchMask = measureConfig.matchMask;  // TODO: Larger measurements
         uint matchMeasure = measureConfig.matchMeasure;
         uint state = 0;  // TODO: Larger state
         float2 pathPhase = float2(1.0f, 0.0f);
@@ -45,12 +45,20 @@ pathKernel(constant MeasureConfig &measureConfig [[buffer(0)]],
             // Apply a single gate
             GateInstance gate = gates[i];
             bool choice = gate.useChoice && (choices & 0x1);
-            if (gate.useChoice) { choice >>= 1; }  // Consume choice from list
-            bool doToggle = choice ^ gate.doToggle;
-            bool addPhase = choice || ((state >> gate.primaryBit) & 0x1);
+            if (gate.useChoice) { choices >>= 1; }  // Consume choice from list
+            bool primaryVal = (state >> gate.primaryBit) & 0x1;
+            bool doToggle = gate.doToggle;
+            bool addPhase = choice || primaryVal;
             // TODO: Support SWAP and CSWAP gates
             if ((gate.controlBit == 255  || ((state >> gate.controlBit)  & 0x1)) &&
                 (gate.control2Bit == 255 || ((state >> gate.control2Bit) & 0x1))) {
+                if (gate.useChoice) {
+                    if (choice) {
+                        state |= 0x1 << gate.primaryBit;  // Turn on bit
+                    } else {
+                        state ^= primaryVal << gate.primaryBit;  // Turn off bit
+                    }
+                }
                 if (doToggle) {
                     state ^= 0x1 << gate.primaryBit;
                 }
@@ -60,7 +68,9 @@ pathKernel(constant MeasureConfig &measureConfig [[buffer(0)]],
                 }
             }
             if (gate.doMeasure) {
+                // Read bit value
                 lastMeasurement = (state >> gate.primaryBit) & 0x1;
+                // If mask, check that this measurement matches the desired measurement
                 if (matchMask & 0x1) {
                     measurementsMatch = measurementsMatch && lastMeasurement == (matchMeasure & 0x1);
                 }

@@ -273,7 +273,7 @@ func loadCircuit(filePath: String) -> CircuitDetails? {
         do {
             let gates = try parseCircuitString(circuitStr: fileContents)
             let circuit = computeCircuitDetails(gates: gates)
-            print("Circuit (# hadamard=\(circuit.hadamardCount), # measure=\(circuit.measureIndexList.count):")
+            print("Circuit (# hadamard=\(circuit.hadamardCount), # measure=\(circuit.measureIndexList.count)):")
             for gate in circuit.gates {
                 print("    \(gate)")
             }
