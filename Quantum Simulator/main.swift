@@ -36,6 +36,8 @@ func simulateCircuit(_ circuit: CircuitDetails,
     let library = device.makeDefaultLibrary()!
     let pathKernel = library.makeFunction(name: "pathKernel")!
     let pathPipelineState = try! device.makeComputePipelineState(function: pathKernel)
+    let checkKernel = library.makeFunction(name: "completionCheckKernel")!
+    let checkPipelineState = try! device.makeComputePipelineState(function: checkKernel)
     var sumPipelineStateList = [MTLComputePipelineState]()
     while true {
         let i = sumPipelineStateList.count
@@ -83,7 +85,8 @@ func simulateCircuit(_ circuit: CircuitDetails,
     let measureConfigArray = (0..<1).map { (_) -> MeasureConfig in
         return MeasureConfig.init(numGates: CInt(circuit.measureIndexList[measureBitIndex]+1),
                                   matchMask: CUnsignedInt(~(~Int(0) << measureBitIndex)),
-                                  matchMeasure: CUnsignedInt(measureMatchEarlier))
+                                  matchMeasure: CUnsignedInt(measureMatchEarlier),
+                                  didCalculationFinish: 0)
     }
     let dispatchConfigArray = (0..<numPathDispatches).map { (i) -> DispatchConfig in
         return DispatchConfig.init(restOfChoices: CUnsignedInt(i * numConcurrentPathThreads))
@@ -109,7 +112,7 @@ func simulateCircuit(_ circuit: CircuitDetails,
         let numSlots = min(bufferMaxSlots, numValsPerStage[i])
         let sumPairBuf = device.makeBuffer(
             length: MemoryLayout<SumPair>.stride * numSlots,
-            options: ((i == numSumStages) ? .storageModeShared : .storageModePrivate))!
+            options: ((i == numSumStages) ? .storageModeManaged : .storageModePrivate))!
         sumPairBufList.append(sumPairBuf)
     }
 
@@ -119,6 +122,11 @@ func simulateCircuit(_ circuit: CircuitDetails,
             to: SumPair.self,
             capacity: numValsPerStage.last! * MemoryLayout<SumPair>.stride),
         count: numValsPerStage.last!)
+    let measureConfigOutput = UnsafeBufferPointer<MeasureConfig>(
+        start: measureConfigBuf!.contents().bindMemory(
+            to: MeasureConfig.self,
+            capacity: measureConfigArray.count * MemoryLayout<MeasureConfig>.stride),
+        count: measureConfigArray.count)
 
     // Connect buffers to kernel
     encoder.setBuffer(measureConfigBuf, offset: 0, index: 0)
@@ -157,6 +165,16 @@ func simulateCircuit(_ circuit: CircuitDetails,
             height: 1, depth: 1)
         encoder.dispatchThreadgroups(numThreadGroups, threadsPerThreadgroup: tgSize)
     }
+    func dispatchCompletionCheck() {
+        // Dispatch path kernel
+        encoder.setComputePipelineState(checkPipelineState)
+        encoder.setBufferOffset(0 * MemoryLayout<MeasureConfig>.stride, index: 0)
+        let tgSize = MTLSize.init(
+            width: 1,
+            height: 1, depth: 1)
+        let numThreadGroups = MTLSize.init(width: 1, height: 1, depth: 1)
+        encoder.dispatchThreadgroups(numThreadGroups, threadsPerThreadgroup: tgSize)
+    }
 
     // Dispatch path and sum kernels in sequence
     func dispatchRecursive(depth: Int, dispatchIndex: Int) -> Int {
@@ -179,6 +197,7 @@ func simulateCircuit(_ circuit: CircuitDetails,
     }
     let numElementsSummed = dispatchRecursive(depth: numSumStages, dispatchIndex: 0)
     assert(numElementsSummed == numPathDispatches, "Dispatch schedule logic error")
+    dispatchCompletionCheck()
 
     // Finish encoding
     encoder.endEncoding()
@@ -189,6 +208,10 @@ func simulateCircuit(_ circuit: CircuitDetails,
     fflush(stdout)
     usleep(200_000)
 
+    commandBuffer.addCompletedHandler { (cmdBuf) in
+        print("Completed")
+    }
+
     let startTime = mach_absolute_time()
     commandBuffer.commit()
     commandBuffer.waitUntilCompleted()
@@ -198,6 +221,12 @@ func simulateCircuit(_ circuit: CircuitDetails,
     // After completion
     print("GPU time: \(duration) seconds")
 
+    if measureConfigOutput[0].didCalculationFinish == measureConfigOutput[0].numGates {
+        print("Was not canceled by OS")
+    } else {
+        print("**** Was canceled by OS ****")
+    }
+
     // Final sum
     var sum = vector_float4()
     print("Sum:")
@@ -206,49 +235,9 @@ func simulateCircuit(_ circuit: CircuitDetails,
         sum += subSum.val01
     }
 
-    // Kernel outputs
-
-    /*let sumPairArrays = sumPairBufList.map { (buf) -> UnsafeBufferPointer<SumPair> in
-        return UnsafeBufferPointer<SumPair>(
-            start: buf.contents().bindMemory(
-                to: SumPair.self,
-                capacity: buf.length),
-            count: buf.length / MemoryLayout<SumPair>.stride)
-    }
-    for arr in sumPairArrays {
-        print("""
-        Next buffer:
-            \(arr[0])
-            \(arr[1])
-            \(arr[2])
-            \(arr[3])
-            \(arr[4])
-            ...
-            \(arr[arr.count/4])
-            \(arr[arr.count/4+1])
-            \(arr[arr.count/4+2])
-            \(arr[arr.count/4+3])
-            ...
-            \(arr[arr.count/2-2])
-            \(arr[arr.count/2-1])
-            \(arr[arr.count/2])
-            \(arr[arr.count/2+1])
-            \(arr[arr.count/2+2])
-            ...
-            \(arr[arr.count/4*3-3])
-            \(arr[arr.count/4*3-2])
-            \(arr[arr.count/4*3-1])
-            \(arr[arr.count/4*3])
-            ...
-            \(arr[arr.count-4])
-            \(arr[arr.count-3])
-            \(arr[arr.count-2])
-            \(arr[arr.count-1])
-        """)
-    }*/
-
     print("Final sum: \(sum)")
 
+    // Calculate real measurement probabilities
     let pZero = sum.x * sum.x + sum.y * sum.y  // sum.xy * conj(sum.xy)
     let pOne  = sum.z * sum.z + sum.w * sum.w
     let probZero = pZero / (pZero + pOne)  // Normalize probabilities
@@ -262,6 +251,7 @@ func simulateCircuit(_ circuit: CircuitDetails,
 print("\nStart\n")
 let filePath = "/Users/cduck/dev/Quantum/simulation/simple.circuit"
 //let filePath = "/Users/cduck/dev/Quantum/simulation/test.circuit"
+//let filePath = "/Users/cduck/dev/Quantum/simulation/hadamard32.circuit"
 if let circuit = loadCircuit(filePath: filePath) {
     simulateCircuit(circuit, measureBitIndex: 2, measureMatchEarlier: 0b11);
 }

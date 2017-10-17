@@ -35,6 +35,7 @@ typedef struct {
     int numGates;
     unsigned int matchMask;  // TODO: Longer state
     unsigned int matchMeasure;
+    int didCalculationFinish;
 } MeasureConfig;
 
 

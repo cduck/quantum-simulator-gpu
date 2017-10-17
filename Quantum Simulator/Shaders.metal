@@ -131,3 +131,12 @@ SUM_KERNEL_STAGE(5)
 SUM_KERNEL_STAGE(6)
 SUM_KERNEL_STAGE(7)
 
+
+// Simple kernel that just copies a value
+// This kernel is scheduled at the end of actual computation and its result
+// is used to check that the OS did not kill the GPU
+kernel void
+completionCheckKernel(device MeasureConfig &measureConfig [[buffer(0)]]) {
+    measureConfig.didCalculationFinish = measureConfig.numGates;
+}
+
