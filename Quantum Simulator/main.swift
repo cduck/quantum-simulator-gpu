@@ -6,253 +6,124 @@
 //  Copyright © 2017 Casey Duckering. All rights reserved.
 //
 
-import Foundation
-import Metal
-import simd
-#if os(Linux)
-    import Glibc
-#else
-    import Darwin.C
-#endif
+let cFilePath = ""
+//let cFilePath = "/Users/cduck/dev/Quantum/simulation/simple.circuit"
+//let cFilePath = "/Users/cduck/dev/Quantum/simulation/test.circuit"
+//let cFilePath = "/Users/cduck/dev/Quantum/simulation/hadamard32.circuit"
 
+func main(verbose: Int, shots: Int) {
+    var filePath = cFilePath
+    var verbose = verbose
+    var shots = shots
 
-//let alignedUniformsSize = (MemoryLayout<Uniforms>.size & ~0xFF) + 0x100
-
-func simulateCircuit(_ circuit: CircuitDetails,
-                     measureBitIndex: Int, measureMatchEarlier: Int) {
-    let devices = MTLCopyAllDevices()
-    print("Number of devices = \(MTLCopyAllDevices().count)")
-
-    guard let device = MTLCreateSystemDefaultDevice() else {
-        print("Metal is not supported on this device")
-        return
-    }
-    //let device = devices[devices.count - 1]  // Use last device
-
-    // Make command queue
-    let commandQueue = device.makeCommandQueue()!
-
-    // Load the kernel functions and create pipelines
-    let library = device.makeDefaultLibrary()!
-    let pathKernel = library.makeFunction(name: "pathKernel")!
-    let pathPipelineState = try! device.makeComputePipelineState(function: pathKernel)
-    let checkKernel = library.makeFunction(name: "completionCheckKernel")!
-    let checkPipelineState = try! device.makeComputePipelineState(function: checkKernel)
-    var sumPipelineStateList = [MTLComputePipelineState]()
-    while true {
-        let i = sumPipelineStateList.count
-        guard let sumKernel = library.makeFunction(name: String(format: "sumKernel%d", i)) else {
-            break
+    let args = CommandLine.arguments
+    if filePath == "" {
+        if args.count <= 1 {
+            print("Usage: \(args.count > 0 ? args[0] : "$0") circuit-file")
+            return
         }
-        // Create pipeline
-        let sumPipelineState = try! device.makeComputePipelineState(function: sumKernel)
-        sumPipelineStateList.append(sumPipelineState)
+        filePath = args[1]
     }
-    let maxSumStages = sumPipelineStateList.count
-
-    // Problem-specific calculations
-    let maxHadamardCount = 28
-    if circuit.hadamardCount > maxHadamardCount {
-        print("Warning: There are too many Hadamard gates (\(circuit.hadamardCount) > \(maxHadamardCount)).  The simulation may take a long time.")
-        print("Press Enter to continue.")
-        let _ = readLine()
+    if args.count > 2 {
+        if let v = Int(args[2]) {
+            verbose = v
+        }
     }
-    let numPathsActual = 1 << circuit.hadamardCount  // Don't set this too high (more than 32) or the OS might crash
-    let numBits = 16
-    let numPathsPerThread = 1 << 8  // Also set in shader
-    let numSumsPerThread = 1 << 6  // Also set in shader
-    let numConcurrentPathThreads = 1 << 16  // 1<<17 is optimal
-    let numPathsAtATime = numConcurrentPathThreads * numPathsPerThread
-    let numPaths = (numPathsActual < numPathsAtATime ? numPathsAtATime : numPathsActual)
-    let numPathDispatches = numPaths / numPathsAtATime
-    let numConcurrentSums = numConcurrentPathThreads / numSumsPerThread
-
-    // Calculate depth of sums
-    var numValsPerStage = [Int]()
-    numValsPerStage.append(numPaths / numPathsPerThread)
-    while numValsPerStage.last! > 0 {
-        numValsPerStage.append(numValsPerStage.last! / numSumsPerThread)
+    if args.count > 3 {
+        if let s = Int(args[3]) {
+            shots = s
+        }
     }
-    let _ = numValsPerStage.popLast()
-    let numSumStages = numValsPerStage.count - 1
-    if numSumStages > maxSumStages {
-        print("Too many sum stages: \(numSumStages) > \(maxSumStages)")
+    guard let circuit = loadCircuit(filePath: filePath, verbose: verbose >= 2) else {
         return
     }
-
-    // Create kernel inputs
-    let gateArray: [GateInstance] = circuit.gates
-    let measureConfigArray = (0..<1).map { (_) -> MeasureConfig in
-        return MeasureConfig.init(numGates: CInt(circuit.measureIndexList[measureBitIndex]+1),
-                                  matchMask: CUnsignedInt(~(~Int(0) << measureBitIndex)),
-                                  matchMeasure: CUnsignedInt(measureMatchEarlier),
-                                  didCalculationFinish: 0)
-    }
-    let dispatchConfigArray = (0..<numPathDispatches).map { (i) -> DispatchConfig in
-        return DispatchConfig.init(restOfChoices: CUnsignedInt(i * numConcurrentPathThreads))
-    }
-
-    // Setup buffer, encoder
-    let commandBuffer = commandQueue.makeCommandBuffer()!
-    let encoder = commandBuffer.makeComputeCommandEncoder()!
-
-    // Setup buffers
-    let measureConfigBuf = device.makeBuffer(bytes: UnsafeRawPointer(measureConfigArray),
-                                             length: MemoryLayout<MeasureConfig>.stride * measureConfigArray.count,
-                                             options: .storageModeManaged)
-    let dispatchConfigBuf = device.makeBuffer(bytes: UnsafeRawPointer(dispatchConfigArray),
-                                              length: MemoryLayout<DispatchConfig>.stride * dispatchConfigArray.count,
-                                              options: .storageModeManaged)
-    let gateBuf = device.makeBuffer(bytes: UnsafeRawPointer(gateArray),
-                                    length: MemoryLayout<GateInstance>.stride * gateArray.count,
-                                    options: .storageModeManaged)
-    var sumPairBufList = [MTLBuffer]()
-    for i in 0..<numSumStages+1 {
-        let bufferMaxSlots = numConcurrentPathThreads
-        let numSlots = min(bufferMaxSlots, numValsPerStage[i])
-        let sumPairBuf = device.makeBuffer(
-            length: MemoryLayout<SumPair>.stride * numSlots,
-            options: ((i == numSumStages) ? .storageModeManaged : .storageModePrivate))!
-        sumPairBufList.append(sumPairBuf)
-    }
-
-    // Kernel outputs
-    let sumPairArrayLast = UnsafeBufferPointer<SumPair>(
-        start: sumPairBufList.last!.contents().bindMemory(
-            to: SumPair.self,
-            capacity: numValsPerStage.last! * MemoryLayout<SumPair>.stride),
-        count: numValsPerStage.last!)
-    let measureConfigOutput = UnsafeBufferPointer<MeasureConfig>(
-        start: measureConfigBuf!.contents().bindMemory(
-            to: MeasureConfig.self,
-            capacity: measureConfigArray.count * MemoryLayout<MeasureConfig>.stride),
-        count: measureConfigArray.count)
-
-    // Connect buffers to kernel
-    encoder.setBuffer(measureConfigBuf, offset: 0, index: 0)
-    encoder.setBuffer(dispatchConfigBuf, offset: 0, index: 1)
-    encoder.setBuffer(gateBuf, offset: 0, index: 2)
-    let sumBufferIndex = 3
-    for i in 0..<numSumStages+1 {
-        encoder.setBuffer(sumPairBufList[i], offset: 0, index: sumBufferIndex + i)
-    }
-
-    //print("Pipeline info: per threadgroup=\(pathPipelineState.maxTotalThreadsPerThreadgroup), execution width=\(pathPipelineState.threadExecutionWidth), memory length=\(pathPipelineState.staticThreadgroupMemoryLength)")
-    func dispatchPath(dispatchIndex: Int) {
-        // Dispatch path kernel
-        encoder.setComputePipelineState(pathPipelineState)
-        encoder.setBufferOffset(dispatchIndex * MemoryLayout<DispatchConfig>.stride, index: 1)
-        //encoder.setBufferOffset(0, index: sumBufferIndex)
-        let tgSize = MTLSize.init(
-            width: min(pathPipelineState.maxTotalThreadsPerThreadgroup, numConcurrentPathThreads),
-            height: 1, depth: 1)
-        let numThreadGroups = MTLSize.init(
-            width: numConcurrentPathThreads / tgSize.width,
-            height: 1, depth: 1)
-        encoder.dispatchThreadgroups(numThreadGroups, threadsPerThreadgroup: tgSize)
-    }
-    func dispatchSumAtStage(stage: Int, numInputs: Int, outputOffset: Int) {
-        // Dispatch sum kernel
-        encoder.setComputePipelineState(sumPipelineStateList[stage])
-        encoder.setBufferOffset(0 * MemoryLayout<SumPair>.stride, index: sumBufferIndex + stage)
-        encoder.setBufferOffset(outputOffset * MemoryLayout<SumPair>.stride, index: sumBufferIndex + stage + 1)
-        let numThreads = numInputs / numSumsPerThread
-        let tgSize = MTLSize.init(
-            width: min(sumPipelineStateList[stage].maxTotalThreadsPerThreadgroup, numThreads),
-            height: 1, depth: 1)
-        let numThreadGroups = MTLSize.init(
-            width: numThreads / tgSize.width,
-            height: 1, depth: 1)
-        encoder.dispatchThreadgroups(numThreadGroups, threadsPerThreadgroup: tgSize)
-    }
-    func dispatchCompletionCheck() {
-        // Dispatch path kernel
-        encoder.setComputePipelineState(checkPipelineState)
-        encoder.setBufferOffset(0 * MemoryLayout<MeasureConfig>.stride, index: 0)
-        let tgSize = MTLSize.init(
-            width: 1,
-            height: 1, depth: 1)
-        let numThreadGroups = MTLSize.init(width: 1, height: 1, depth: 1)
-        encoder.dispatchThreadgroups(numThreadGroups, threadsPerThreadgroup: tgSize)
-    }
-
-    // Dispatch path and sum kernels in sequence
-    func dispatchRecursive(depth: Int, dispatchIndex: Int) -> Int {
-        if depth <= 0 {
-            dispatchPath(dispatchIndex: dispatchIndex)
-            return dispatchIndex + 1
-        } else {
-            var dispatchIndex = dispatchIndex
-            let numLoops = max(min(numValsPerStage[depth - 1] / numConcurrentPathThreads, numSumsPerThread), 1)
-            let numSumInputs = min(numValsPerStage[depth - 1], numConcurrentPathThreads)
-            for i in 0..<numLoops {
-                dispatchIndex = dispatchRecursive(depth: depth - 1,
-                                                  dispatchIndex: dispatchIndex)
-                dispatchSumAtStage(stage: depth - 1,
-                                   numInputs: numSumInputs,
-                                   outputOffset: i * numConcurrentSums)
+    do {
+        let gpu = try PathCompute(verbose: verbose-1)
+        if shots == 1 {
+            let (measVal, measProb) = try computeEntireMeasurement(gpu: gpu, circuit: circuit, verbose: verbose)
+            if verbose >= 1 {
+                print("")
             }
-            return dispatchIndex
+            let hexStr = String(format: "%\((circuit.measureIndexList.count+15)/16)x", measVal)
+            let binStr = binaryString(val: measVal, bitCount: circuit.measureIndexList.count, unknownMask: 0)
+            print("Measurement: 0x\(hexStr), \(measVal), 0b\(binStr)")
+            print("Probability of this value: \(measProb)")
+        }
+
+        if shots > 1 {
+            print("Running \(shots) times\n")
+            var counts = (0..<(1<<circuit.measureIndexList.count)).map({ (_) -> Float in return 0 })
+            for i in 0..<shots {
+                let (measVal, measProb) = try computeEntireMeasurement(gpu: gpu, circuit: circuit, verbose: 0)
+                counts[measVal] += 1 / Float(shots)
+
+                if verbose >= 1 {
+                    let hexStr = String(format: "%\((circuit.measureIndexList.count+15)/16)x", measVal)
+                    let binStr = binaryString(val: measVal, bitCount: circuit.measureIndexList.count, unknownMask: 0)
+                    print("Measurement: 0x\(hexStr), \(measVal), 0b\(binStr) (p = \(measProb))")
+                    print("Counts (shots=\(i+1)): \(counts)")
+                }
+            }
+            print("\nFinal Counts: \(counts)")
+        }
+    } catch PathComputeError.InitError(let msg) {
+        print("Init error: \(msg)")
+    } catch PathComputeError.InvalidCircuit(let msg) {
+        print("Circuit error: \(msg)")
+    } catch PathComputeError.StateError(let msg) {
+        print("State error: \(msg)")
+    } catch PathComputeError.GpuError(let msg) {
+        print("GPU error: \(msg)")
+    } catch {
+        print("Error: \(error)")
+    }
+}
+
+func computeEntireMeasurement(gpu: PathCompute, circuit: CircuitDetails, verbose: Int) throws -> (Int, Float) {
+    try gpu.prepareCircuit(circuit)
+    gpu.warnUserAboutCircuitSize()
+
+    var measureValue = 0
+    var totalProb: Float = 1
+    for (measureBitIndex, (gateIndex, _)) in
+            circuit.measureIndexList.enumerated() {
+        let probZero = try gpu.computeBitProbability(
+            measureBitIndex: measureBitIndex,
+            measureMatchEarlier: measureValue,
+            delayBeforeRunning: verbose >= 1)
+        let bitVal = randomBit(probZero: probZero)
+        let bitProb = bitVal == 0 ? probZero : 1 - probZero
+        totalProb *= bitProb
+        measureValue |= bitVal << measureBitIndex
+        if verbose >= 1 {
+            let bitIndex = circuit.gates[gateIndex].primaryBit
+            print("Measurement \(measureBitIndex): qubit \(bitIndex) = \(bitVal) (with probability of \(bitProb))")
+            let binStr = binaryString(val: measureValue,
+                                      bitCount: circuit.measureIndexList.count,
+                                      unknownMask: (~0) << (measureBitIndex + 1))
+            print("Current value: 0b\(binStr)")
         }
     }
-    let numElementsSummed = dispatchRecursive(depth: numSumStages, dispatchIndex: 0)
-    assert(numElementsSummed == numPathDispatches, "Dispatch schedule logic error")
-    dispatchCompletionCheck()
+    return (measureValue, totalProb)
+}
 
-    // Finish encoding
-    encoder.endEncoding()
-
-    // Start running on GPU
-    print("\nRunning on GPU")
-    // Delay so the message can be displayed before the UI freezes during GPU compute
-    fflush(stdout)
-    usleep(200_000)
-
-    commandBuffer.addCompletedHandler { (cmdBuf) in
-        print("Completed")
+func binaryString(val: Int, bitCount: Int, unknownMask: Int) -> String {
+    var valStr = ""
+    for i in (0..<bitCount).reversed() {
+        if (unknownMask >> i) & 0x1 == 0x1 {
+            valStr.append("?")
+        } else {
+            valStr.append((val >> i) & 0x1 == 0x1 ? "1" : "0")
+        }
     }
+    return valStr
+}
 
-    let startTime = mach_absolute_time()
-    commandBuffer.commit()
-    commandBuffer.waitUntilCompleted()
-    let endTime = mach_absolute_time()
-    let duration = Double(endTime - startTime) / Double(NSEC_PER_SEC)
-
-    // After completion
-    print("GPU time: \(duration) seconds")
-
-    if measureConfigOutput[0].didCalculationFinish == measureConfigOutput[0].numGates {
-        print("Was not canceled by OS")
-    } else {
-        print("**** Was canceled by OS ****")
-    }
-
-    // Final sum
-    var sum = vector_float4()
-    print("Sum:")
-    for subSum in sumPairArrayLast {
-        print("    \(subSum)")
-        sum += subSum.val01
-    }
-
-    print("Final sum: \(sum)")
-
-    // Calculate real measurement probabilities
-    let pZero = sum.x * sum.x + sum.y * sum.y  // sum.xy * conj(sum.xy)
-    let pOne  = sum.z * sum.z + sum.w * sum.w
-    let probZero = pZero / (pZero + pOne)  // Normalize probabilities
-    let probOne = pOne / (pZero + pOne)
-    print("")
-    print("Probability of measureing zero: \(probZero)")
-    print("Probability of measureing one:  \(probOne)")
+func randomBit(probZero: Float) -> Int {
+    let randInt: UInt32 = arc4random()
+    let cutoff = UInt64(probZero * Float(UInt64(1) << 32))
+    return UInt64(randInt) < cutoff ? 0 : 1
 }
 
 
-print("\nStart\n")
-let filePath = "/Users/cduck/dev/Quantum/simulation/simple.circuit"
-//let filePath = "/Users/cduck/dev/Quantum/simulation/test.circuit"
-//let filePath = "/Users/cduck/dev/Quantum/simulation/hadamard32.circuit"
-if let circuit = loadCircuit(filePath: filePath) {
-    simulateCircuit(circuit, measureBitIndex: 2, measureMatchEarlier: 0b11);
-}
-print("\nFinished\n")
+main(verbose: 1, shots: 1)

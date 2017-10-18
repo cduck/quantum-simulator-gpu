@@ -39,12 +39,17 @@ enum ParseCircuitError: Error {
 
 struct CircuitDetails {
     let gates: [GateInstance]
+    let bitCount: Int
     let hadamardCount: Int
-    let measureIndexList: [Int]
+    let actualHadamardCount: Int
+    let measureIndexList: [(Int, Int)]
 }
 
 let NO_CONTROL = CUnsignedChar(255)
 let M_PIf: Float = 3.14159265358979323846
+func conj(_ val: float2) -> float2 {
+    return float2(val.x, -val.y)
+}
 func complexExponentPhase(angle: Float) -> float2 {
     let real = cos(angle)
     let imag = sin(angle)
@@ -63,7 +68,7 @@ func complexExponentPhaseFraction2(k: Int) -> float2 {
 let gateInitializers: Dictionary<String, ([Float],[Int]) throws -> GateInstance> = [
     "M": { (params, args) throws -> GateInstance in
         if params.count != 0 { throw ParseCircuitError.InvalidGateParamCount }
-        if args.count != 1 { throw ParseCircuitError.InvalidGateParamCount }
+        if args.count != 1 { throw ParseCircuitError.InvalidGateArgCount }
         return GateInstance.init(phase: float2(1, 0),
                                  primaryBit: CUnsignedChar(args[0]),
                                  controlBit: NO_CONTROL,
@@ -74,7 +79,7 @@ let gateInitializers: Dictionary<String, ([Float],[Int]) throws -> GateInstance>
     },
     "H": { (params, args) throws -> GateInstance in
         if params.count != 0 { throw ParseCircuitError.InvalidGateParamCount }
-        if args.count != 1 { throw ParseCircuitError.InvalidGateParamCount }
+        if args.count != 1 { throw ParseCircuitError.InvalidGateArgCount }
         return GateInstance.init(phase: float2(-1, 0),
                                  primaryBit: CUnsignedChar(args[0]),
                                  controlBit: NO_CONTROL,
@@ -85,7 +90,7 @@ let gateInitializers: Dictionary<String, ([Float],[Int]) throws -> GateInstance>
     },
     "I": { (params, args) throws -> GateInstance in
         //if params.count != 0 { throw ParseCircuitError.InvalidGateParamCount }
-        //if args.count != 1 { throw ParseCircuitError.InvalidGateParamCount }
+        //if args.count != 1 { throw ParseCircuitError.InvalidGateArgCount }
         return GateInstance.init(phase: float2(1, 0),
                                  primaryBit: 0,
                                  controlBit: NO_CONTROL,
@@ -96,7 +101,7 @@ let gateInitializers: Dictionary<String, ([Float],[Int]) throws -> GateInstance>
     },
     "X": { (params, args) throws -> GateInstance in
         if params.count != 0 { throw ParseCircuitError.InvalidGateParamCount }
-        if args.count != 1 { throw ParseCircuitError.InvalidGateParamCount }
+        if args.count != 1 { throw ParseCircuitError.InvalidGateArgCount }
         return GateInstance.init(phase: float2(1, 0),
                                  primaryBit: CUnsignedChar(args[0]),
                                  controlBit: NO_CONTROL,
@@ -107,7 +112,7 @@ let gateInitializers: Dictionary<String, ([Float],[Int]) throws -> GateInstance>
     },
     "Y": { (params, args) throws -> GateInstance in
         if params.count != 0 { throw ParseCircuitError.InvalidGateParamCount }
-        if args.count != 1 { throw ParseCircuitError.InvalidGateParamCount }
+        if args.count != 1 { throw ParseCircuitError.InvalidGateArgCount }
         return GateInstance.init(phase: float2(-1, 0),
                                  primaryBit: CUnsignedChar(args[0]),
                                  controlBit: NO_CONTROL,
@@ -118,7 +123,7 @@ let gateInitializers: Dictionary<String, ([Float],[Int]) throws -> GateInstance>
     },
     "Z": { (params, args) throws -> GateInstance in
         if params.count != 0 { throw ParseCircuitError.InvalidGateParamCount }
-        if args.count != 1 { throw ParseCircuitError.InvalidGateParamCount }
+        if args.count != 1 { throw ParseCircuitError.InvalidGateArgCount }
         return GateInstance.init(phase: float2(-1, 0),
                                  primaryBit: CUnsignedChar(args[0]),
                                  controlBit: NO_CONTROL,
@@ -129,7 +134,7 @@ let gateInitializers: Dictionary<String, ([Float],[Int]) throws -> GateInstance>
     },
     "S": { (params, args) throws -> GateInstance in
         if params.count != 0 { throw ParseCircuitError.InvalidGateParamCount }
-        if args.count != 1 { throw ParseCircuitError.InvalidGateParamCount }
+        if args.count != 1 { throw ParseCircuitError.InvalidGateArgCount }
         return GateInstance.init(phase: float2(0, 1),
                                  primaryBit: CUnsignedChar(args[0]),
                                  controlBit: NO_CONTROL,
@@ -140,7 +145,7 @@ let gateInitializers: Dictionary<String, ([Float],[Int]) throws -> GateInstance>
     },
     "SD": { (params, args) throws -> GateInstance in
         if params.count != 0 { throw ParseCircuitError.InvalidGateParamCount }
-        if args.count != 1 { throw ParseCircuitError.InvalidGateParamCount }
+        if args.count != 1 { throw ParseCircuitError.InvalidGateArgCount }
         return GateInstance.init(phase: float2(0, -1),
                                  primaryBit: CUnsignedChar(args[0]),
                                  controlBit: NO_CONTROL,
@@ -151,7 +156,7 @@ let gateInitializers: Dictionary<String, ([Float],[Int]) throws -> GateInstance>
     },
     "T": { (params, args) throws -> GateInstance in
         if params.count != 0 { throw ParseCircuitError.InvalidGateParamCount }
-        if args.count != 1 { throw ParseCircuitError.InvalidGateParamCount }
+        if args.count != 1 { throw ParseCircuitError.InvalidGateArgCount }
         return GateInstance.init(phase: complexExponentPhaseFraction2(k: 3),
                                  primaryBit: CUnsignedChar(args[0]),
                                  controlBit: NO_CONTROL,
@@ -162,8 +167,8 @@ let gateInitializers: Dictionary<String, ([Float],[Int]) throws -> GateInstance>
     },
     "TD": { (params, args) throws -> GateInstance in
         if params.count != 0 { throw ParseCircuitError.InvalidGateParamCount }
-        if args.count != 1 { throw ParseCircuitError.InvalidGateParamCount }
-        return GateInstance.init(phase: -complexExponentPhaseFraction2(k: 3),
+        if args.count != 1 { throw ParseCircuitError.InvalidGateArgCount }
+        return GateInstance.init(phase: conj(complexExponentPhaseFraction2(k: 3)),
                                  primaryBit: CUnsignedChar(args[0]),
                                  controlBit: NO_CONTROL,
                                  control2Bit: NO_CONTROL,
@@ -173,7 +178,7 @@ let gateInitializers: Dictionary<String, ([Float],[Int]) throws -> GateInstance>
     },
     "R": { (params, args) throws -> GateInstance in
         if params.count != 1 { throw ParseCircuitError.InvalidGateParamCount }
-        if args.count != 1 { throw ParseCircuitError.InvalidGateParamCount }
+        if args.count != 1 { throw ParseCircuitError.InvalidGateArgCount }
         return GateInstance.init(phase: complexExponentPhase(angle: params[0]),
                                  primaryBit: CUnsignedChar(args[0]),
                                  controlBit: NO_CONTROL,
@@ -184,7 +189,7 @@ let gateInitializers: Dictionary<String, ([Float],[Int]) throws -> GateInstance>
     },
     "RK": { (params, args) throws -> GateInstance in
         if params.count != 1 { throw ParseCircuitError.InvalidGateParamCount }
-        if args.count != 1 { throw ParseCircuitError.InvalidGateParamCount }
+        if args.count != 1 { throw ParseCircuitError.InvalidGateArgCount }
         return GateInstance.init(phase: complexExponentPhaseFraction2(k: Int(params[0])),
                                  primaryBit: CUnsignedChar(args[0]),
                                  controlBit: NO_CONTROL,
@@ -195,8 +200,8 @@ let gateInitializers: Dictionary<String, ([Float],[Int]) throws -> GateInstance>
     },
     "RKD": { (params, args) throws -> GateInstance in
         if params.count != 1 { throw ParseCircuitError.InvalidGateParamCount }
-        if args.count != 1 { throw ParseCircuitError.InvalidGateParamCount }
-        return GateInstance.init(phase: -complexExponentPhaseFraction2(k: Int(params[0])),
+        if args.count != 1 { throw ParseCircuitError.InvalidGateArgCount }
+        return GateInstance.init(phase: conj(complexExponentPhaseFraction2(k: Int(params[0]))),
                                  primaryBit: CUnsignedChar(args[0]),
                                  controlBit: NO_CONTROL,
                                  control2Bit: NO_CONTROL,
@@ -207,7 +212,7 @@ let gateInitializers: Dictionary<String, ([Float],[Int]) throws -> GateInstance>
     // TODO: Implement SWAP and others
     /*"SWAP": { (params, args) throws -> GateInstance in
         if params.count != 1 { throw ParseCircuitError.InvalidGateParamCount }
-        if args.count != 1 { throw ParseCircuitError.InvalidGateParamCount }
+        if args.count != 1 { throw ParseCircuitError.InvalidGateArgCount }
         return GateInstance.init(phase: float2(0, 0),
                                  primaryBit: CUnsignedChar(args[0]),
                                  controlBit: ???,
@@ -219,85 +224,113 @@ let gateInitializers: Dictionary<String, ([Float],[Int]) throws -> GateInstance>
 ]
 func parseCircuitString(circuitStr: String) throws -> [GateInstance] {
     var circuit = [GateInstance]()
-    for line in circuitStr.components(separatedBy: .newlines) {
-        let leftRight = line.components(separatedBy: "(")
-        if leftRight.count < 2 { continue; }
-        let right = leftRight[1].components(separatedBy: ")")
-        if right.count < 2 { continue; }
-        let argStrs = right[0].components(separatedBy: ",")
-        let argNums = try argStrs.map({ (argStr) throws -> Int in
-            if let arg = Int(argStr.trimmingCharacters(in: .whitespaces)) { return arg }
-            else { throw ParseCircuitError.InvalidSyntaxArg }
-        })
-        let nameParam = leftRight[0].components(separatedBy: "_")
-        let nameStr = nameParam[0].uppercased()
-        let paramNums = try nameParam[1...].map({ (paramStr) throws -> Float in
-            if let param = Float(paramStr) { return param }
-            else { throw ParseCircuitError.InvalidSyntaxParam }
-        })
-        if let initFunc = gateInitializers[nameStr] {
-            let gate = try initFunc(paramNums, argNums)
-            circuit.append(gate)
+    for (i, lineUntrimmed) in circuitStr.components(separatedBy: .newlines).enumerated() {
+        do {
+            let line = lineUntrimmed.trimmingCharacters(in: .whitespaces)
+            if line.starts(with: "#") {
+                continue
+            }
+            let leftRight = line.components(separatedBy: "(")
+            if leftRight.count < 2 { continue; }
+            let right = leftRight[1].components(separatedBy: ")")
+            if right.count < 2 { continue; }
+            let argStrs = right[0].components(separatedBy: ",")
+            let argNums = try argStrs.map({ (argStr) throws -> Int in
+                if let arg = Int(argStr.trimmingCharacters(in: .whitespaces)) { return arg }
+                else { throw ParseCircuitError.InvalidSyntaxArg }
+            })
+            let nameParam = leftRight[0].components(separatedBy: "_")
+            let nameStr = nameParam[0].uppercased()
+            let paramNums = try nameParam[1...].map({ (paramStr) throws -> Float in
+                if let param = Float(paramStr) { return param }
+                else { throw ParseCircuitError.InvalidSyntaxParam }
+            })
+            if let initFunc = gateInitializers[nameStr] {
+                let gate = try initFunc(paramNums, argNums)
+                circuit.append(gate)
+                continue
+            }
+            if nameStr.count >= 3 && nameStr.starts(with: "CC") {
+                let index = nameStr.index(after: nameStr.index(after: nameStr.startIndex))
+                let subStr = String(nameStr[index...])
+                if let initFunc = gateInitializers[subStr] {
+                    var gate = try initFunc(paramNums, [Int](argNums.suffix(from: 2)))
+                    gate.controlBit = CUnsignedChar(argNums[0])
+                    gate.control2Bit = CUnsignedChar(argNums[1])
+                    circuit.append(gate)
+                    continue
+                }
+            }
+            if nameStr.count >= 2 && nameStr.starts(with: "C") {
+                let index = nameStr.index(after: nameStr.startIndex)
+                let subStr = String(nameStr[index...])
+                if let initFunc = gateInitializers[subStr] {
+                    var gate = try initFunc(paramNums, [Int](argNums.suffix(from: 1)))
+                    gate.controlBit = CUnsignedChar(argNums[0])
+                    circuit.append(gate)
+                    continue
+                }
+            }
+            print("Warning: Unknown gate \"\(nameStr)\"")
             continue
+        } catch ParseCircuitError.InvalidSyntaxParam {
+            print("Syntax error at line \(i+1): Invalid parameter syntax")
+            throw ParseCircuitError.InvalidSyntaxParam
+        } catch ParseCircuitError.InvalidSyntaxArg {
+            print("Syntax error at line \(i+1): Invalid argument syntax")
+            throw ParseCircuitError.InvalidSyntaxArg
+        } catch ParseCircuitError.InvalidGateParamCount {
+            print("Syntax error at line \(i+1): Invalid number of parameters")
+            throw ParseCircuitError.InvalidGateParamCount
+        } catch ParseCircuitError.InvalidGateArgCount {
+            print("Syntax error at line \(i+1): Invalid numer of arguments")
+            throw ParseCircuitError.InvalidGateArgCount
         }
-        if nameStr.count >= 3 && nameStr.starts(with: "CC") {
-            let index = nameStr.index(after: nameStr.index(after: nameStr.startIndex))
-            let subStr = String(nameStr[index...])
-            if let initFunc = gateInitializers[subStr] {
-                var gate = try initFunc(paramNums, [Int](argNums.suffix(from: 2)))
-                gate.controlBit = CUnsignedChar(argNums[0])
-                gate.control2Bit = CUnsignedChar(argNums[1])
-                circuit.append(gate)
-                continue
-            }
-        }
-        if nameStr.count >= 2 && nameStr.starts(with: "C") {
-            let index = nameStr.index(after: nameStr.startIndex)
-            let subStr = String(nameStr[index...])
-            if let initFunc = gateInitializers[subStr] {
-                var gate = try initFunc(paramNums, [Int](argNums.suffix(from: 1)))
-                gate.controlBit = CUnsignedChar(argNums[0])
-                circuit.append(gate)
-                continue
-            }
-        }
-        print("Warning: Unknown gate \"\(nameStr)\"")
-        continue
     }
     return circuit
 }
 
-func loadCircuit(filePath: String) -> CircuitDetails? {
+func loadCircuit(filePath: String, verbose: Bool) -> CircuitDetails? {
     do {
         let fileContents = try String(contentsOfFile: filePath)
         do {
             let gates = try parseCircuitString(circuitStr: fileContents)
             let circuit = computeCircuitDetails(gates: gates)
-            print("Circuit (# hadamard=\(circuit.hadamardCount), # measure=\(circuit.measureIndexList.count)):")
-            for gate in circuit.gates {
-                print("    \(gate)")
+            if verbose {
+                print("Circuit (numHadamard=\(circuit.hadamardCount), numMeasure=\(circuit.measureIndexList.count)):")
+                for gate in circuit.gates {
+                    print("    \(gate)")
+                }
             }
             return circuit
         } catch {
-            print("Error parsing file")
+            print("Error parsing file: \(error)")
         }
     } catch {
-        print("Error opening file")
+        print("Error opening file: \(error)")
     }
     return nil
 }
 
 func computeCircuitDetails(gates: [GateInstance]) -> CircuitDetails {
     var hadamardCount = 0
-    var measureIndexList = [Int]()
+    var measureIndexList = [(Int, Int)]()
+    var bitCount = 0
     for (i, gate) in gates.enumerated() {
+        let maxBitIndex = max(gate.primaryBit == 255 ? -1 : Int(gate.primaryBit),
+                              gate.controlBit == 255 ? -1 : Int(gate.primaryBit),
+                              gate.control2Bit == 255 ? -1 : Int(gate.primaryBit))
+        bitCount = max(bitCount, maxBitIndex + 1)
         if gate.useChoice {
             hadamardCount += 1
         }
         if gate.doMeasure {
-            measureIndexList.append(i)
+            measureIndexList.append((i, hadamardCount))
         }
     }
-    return CircuitDetails(gates: gates, hadamardCount: hadamardCount, measureIndexList: measureIndexList)
+    return CircuitDetails(gates: gates, bitCount: bitCount,
+                          hadamardCount: (measureIndexList.count > 0 ? measureIndexList.last!.1 : 0),
+                          actualHadamardCount: hadamardCount,
+                          measureIndexList: measureIndexList)
 }
 

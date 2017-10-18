@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		932E61381F96965100D75CA4 /* PathCompute.swift in Sources */ = {isa = PBXBuildFile; fileRef = 932E61371F96965100D75CA4 /* PathCompute.swift */; };
 		934D5F581F920C1300F9FEAE /* Shaders.metal in Sources */ = {isa = PBXBuildFile; fileRef = 934D5F571F920C1300F9FEAE /* Shaders.metal */; };
 		934EEEEA1F8C689F00C9C3A0 /* main.swift in Sources */ = {isa = PBXBuildFile; fileRef = 934EEEE91F8C689F00C9C3A0 /* main.swift */; };
 		939705D21F951571004A498D /* loadCircuit.swift in Sources */ = {isa = PBXBuildFile; fileRef = 939705D11F951570004A498D /* loadCircuit.swift */; };
@@ -25,6 +26,7 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		932E61371F96965100D75CA4 /* PathCompute.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PathCompute.swift; sourceTree = "<group>"; };
 		934D5F561F920C0500F9FEAE /* ShaderTypes.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = ShaderTypes.h; sourceTree = "<group>"; };
 		934D5F571F920C1300F9FEAE /* Shaders.metal */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.metal; path = Shaders.metal; sourceTree = "<group>"; };
 		934D5F591F920F1900F9FEAE /* BridgeHeader.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = BridgeHeader.h; sourceTree = "<group>"; };
@@ -65,6 +67,7 @@
 			children = (
 				934EEEE91F8C689F00C9C3A0 /* main.swift */,
 				939705D11F951570004A498D /* loadCircuit.swift */,
+				932E61371F96965100D75CA4 /* PathCompute.swift */,
 				934D5F571F920C1300F9FEAE /* Shaders.metal */,
 				934D5F561F920C0500F9FEAE /* ShaderTypes.h */,
 				934D5F591F920F1900F9FEAE /* BridgeHeader.h */,
@@ -132,6 +135,7 @@
 			files = (
 				939705D21F951571004A498D /* loadCircuit.swift in Sources */,
 				934D5F581F920C1300F9FEAE /* Shaders.metal in Sources */,
+				932E61381F96965100D75CA4 /* PathCompute.swift in Sources */,
 				934EEEEA1F8C689F00C9C3A0 /* main.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

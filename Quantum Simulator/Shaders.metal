@@ -43,16 +43,18 @@ pathKernel(constant MeasureConfig &measureConfig [[buffer(0)]],
 
         for (int i=0; i < measureConfig.numGates; i++) {
             // Apply a single gate
-            GateInstance gate = gates[i];
-            bool choice = gate.useChoice && (choices & 0x1);
+            //GateInstance gate = gates[i];
+            #define gate (gates[i])
+            bool choice = choices & 0x1;
             if (gate.useChoice) { choices >>= 1; }  // Consume choice from list
             bool primaryVal = (state >> gate.primaryBit) & 0x1;
             bool doToggle = gate.doToggle;
-            bool addPhase = choice || primaryVal;
+            bool addPhase = primaryVal;
             // TODO: Support SWAP and CSWAP gates
             if ((gate.controlBit == 255  || ((state >> gate.controlBit)  & 0x1)) &&
                 (gate.control2Bit == 255 || ((state >> gate.control2Bit) & 0x1))) {
                 if (gate.useChoice) {
+                    addPhase = addPhase && choice;
                     if (choice) {
                         state |= 0x1 << gate.primaryBit;  // Turn on bit
                     } else {
