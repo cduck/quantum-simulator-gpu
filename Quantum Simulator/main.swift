@@ -34,7 +34,7 @@ func main(verbose: Int, shots: Int) {
             shots = s
         }
     }
-    guard let circuit = loadCircuit(filePath: filePath, verbose: verbose >= 2) else {
+    guard let circuit = loadCircuit(filePath: filePath, verbose: verbose >= 3) else {
         return
     }
     do {
@@ -44,7 +44,7 @@ func main(verbose: Int, shots: Int) {
             if verbose >= 1 {
                 print("")
             }
-            let hexStr = String(format: "%\((circuit.measureIndexList.count+15)/16)x", measVal)
+            let hexStr = String(format: "%0\((circuit.measureIndexList.count+15)/16)x", measVal)
             let binStr = binaryString(val: measVal, bitCount: circuit.measureIndexList.count, unknownMask: 0)
             print("Measurement: 0x\(hexStr), \(measVal), 0b\(binStr)")
             print("Probability of this value: \(measProb)")
@@ -54,7 +54,7 @@ func main(verbose: Int, shots: Int) {
             print("Running \(shots) times\n")
             var counts = (0..<(1<<circuit.measureIndexList.count)).map({ (_) -> Float in return 0 })
             for i in 0..<shots {
-                let (measVal, measProb) = try computeEntireMeasurement(gpu: gpu, circuit: circuit, verbose: 0)
+                let (measVal, measProb) = try computeEntireMeasurement(gpu: gpu, circuit: circuit, verbose: verbose-1)
                 counts[measVal] += 1 / Float(shots)
 
                 if verbose >= 1 {
@@ -83,6 +83,7 @@ func computeEntireMeasurement(gpu: PathCompute, circuit: CircuitDetails, verbose
     try gpu.prepareCircuit(circuit)
     gpu.warnUserAboutCircuitSize()
 
+    var startTime = mach_absolute_time()
     var measureValue = 0
     var totalProb: Float = 1
     for (measureBitIndex, (gateIndex, _)) in
@@ -91,6 +92,10 @@ func computeEntireMeasurement(gpu: PathCompute, circuit: CircuitDetails, verbose
             measureBitIndex: measureBitIndex,
             measureMatchEarlier: measureValue,
             delayBeforeRunning: verbose >= 1)
+        if probZero.isNaN {
+            print("Error: No paths match previous measurements")
+            return (measureValue, 0)
+        }
         let bitVal = randomBit(probZero: probZero)
         let bitProb = bitVal == 0 ? probZero : 1 - probZero
         totalProb *= bitProb
@@ -103,6 +108,11 @@ func computeEntireMeasurement(gpu: PathCompute, circuit: CircuitDetails, verbose
                                       unknownMask: (~0) << (measureBitIndex + 1))
             print("Current value: 0b\(binStr)")
         }
+    }
+    let endTime = mach_absolute_time()
+    var totalTime = Double(endTime - startTime) / Double(NSEC_PER_SEC)
+    if verbose >= 1 {
+        print("\nTotal measurement time: \(totalTime) seconds")
     }
     return (measureValue, totalProb)
 }

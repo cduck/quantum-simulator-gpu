@@ -33,8 +33,10 @@ typedef struct {
 
 typedef struct {
     int numGates;
+    int numGatesCommon;
     unsigned int matchMask;  // TODO: Longer state
     unsigned int matchMeasure;
+    int restOfChoicesLength;  // Not used right now
     int didCalculationFinish;
 } MeasureConfig;
 

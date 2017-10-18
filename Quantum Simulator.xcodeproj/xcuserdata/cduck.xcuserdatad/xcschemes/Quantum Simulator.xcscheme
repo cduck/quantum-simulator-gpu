@@ -69,6 +69,10 @@
             argument = "/Users/cduck/dev/Quantum/simulation/simple.circuit"
             isEnabled = "YES">
          </CommandLineArgument>
+         <CommandLineArgument
+            argument = "3"
+            isEnabled = "YES">
+         </CommandLineArgument>
       </CommandLineArguments>
       <AdditionalOptions>
       </AdditionalOptions>

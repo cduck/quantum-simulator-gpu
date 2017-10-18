@@ -17,6 +17,19 @@ enum PathComputeError: Swift.Error {
     case GpuError(_: String)
 }
 
+func log2Floor(_ val: Int) -> Int {
+    // When val <= 0, returns 0
+    // When val > 0, returns floor(log2(val))
+    var val = val
+    for i in 0... {
+        if val <= 0 {
+            return i
+        }
+        val >>= 1
+    }
+    return 0
+}
+
 class PathCompute {
     var verbose: Int
     // Long-lived Metal objects: device, queue, etc.
@@ -44,6 +57,7 @@ class PathCompute {
 
     // Circuit and calculation state
     var circuit: CircuitDetails?
+    var circuitGates = [GateInstance]()
     var gpuTime: Double = 0
 
     init(verbose: Int) throws {
@@ -107,6 +121,8 @@ class PathCompute {
         }
 
         self.circuit = circuit
+        self.circuitGates = [GateInstance](circuit.gates)
+        self.circuitGates.append(GateInstance.init())
     }
 
     func warnUserAboutCircuitSize() {
@@ -135,7 +151,6 @@ class PathCompute {
         // Only cound Hadamard gates that come before and might affect the measurement
         let hadamardCount = circuit.measureIndexList[measureBitIndex].1
         let numGates = circuit.measureIndexList[measureBitIndex].0+1
-
         // Calculate thread configuration
         let numPathsNeeded = 1 << hadamardCount
         let numPaths = max(numPathsNeeded, numPathsAtATime)
@@ -147,12 +162,27 @@ class PathCompute {
         let numSumStages = numValsPerStage.count - 1
         assert(numSumStages <= maxSumStages, "Too many sum stages")  // Already checked earlier
 
+        // Calculate helper values for kernel
+        let restOfChoicesLength = log2Floor(numPathDispatches * numConcurrentPathThreads)
+        var numGatesCommon = numGates
+        var c = 0
+        for (i, gate) in circuitGates.enumerated() {
+            if gate.useChoice {
+                c += 1
+            }
+            if c > restOfChoicesLength {
+                numGatesCommon = i  // Don't include current gate
+            }
+        }
+
         // Create kernel inputs
-        let gateArray: [GateInstance] = circuit.gates
+        let gateArray: [GateInstance] = circuitGates
         let measureConfigArray = (0..<1).map { (_) -> MeasureConfig in
             return MeasureConfig.init(numGates: CInt(numGates),
+                                      numGatesCommon: CInt(min(numGatesCommon, numGates)),
                                       matchMask: CUnsignedInt(~(~Int(0) << measureBitIndex)),
                                       matchMeasure: CUnsignedInt(measureMatchEarlier),
+                                      restOfChoicesLength: CInt(restOfChoicesLength),
                                       didCalculationFinish: 0)
         }
         let dispatchConfigArray = (0..<numPathDispatches).map { (i) -> DispatchConfig in
