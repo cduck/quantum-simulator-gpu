@@ -19,7 +19,7 @@ func main(verbose: Int, shots: Int) {
     let args = CommandLine.arguments
     if filePath == "" {
         if args.count <= 1 {
-            print("Usage: \(args.count > 0 ? args[0] : "$0") circuit-file")
+            print("Usage: \(args.count > 0 ? args[0] : "$0") <circuit-file> [<verbose-level> [<number-of-shots>]]")
             return
         }
         filePath = args[1]
@@ -83,7 +83,7 @@ func computeEntireMeasurement(gpu: PathCompute, circuit: CircuitDetails, verbose
     try gpu.prepareCircuit(circuit)
     gpu.warnUserAboutCircuitSize()
 
-    var startTime = mach_absolute_time()
+    let startTime = mach_absolute_time()
     var measureValue = 0
     var totalProb: Float = 1
     for (measureBitIndex, (gateIndex, _)) in
@@ -110,7 +110,7 @@ func computeEntireMeasurement(gpu: PathCompute, circuit: CircuitDetails, verbose
         }
     }
     let endTime = mach_absolute_time()
-    var totalTime = Double(endTime - startTime) / Double(NSEC_PER_SEC)
+    let totalTime = Double(endTime - startTime) / Double(NSEC_PER_SEC)
     if verbose >= 1 {
         print("\nTotal measurement time: \(totalTime) seconds")
     }

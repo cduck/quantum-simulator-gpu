@@ -22,7 +22,7 @@ func log2Floor(_ val: Int) -> Int {
     // When val > 0, returns floor(log2(val))
     var val = val
     for i in 0... {
-        if val <= 0 {
+        if val <= 1 {
             return i
         }
         val >>= 1
@@ -99,7 +99,7 @@ class PathCompute {
         maxSumStages = sumPipelineStateList.count
 
         if verbose >= 1 {
-            print("GPU pipeline info: threads per threadgroup = \(pathPipelineState.maxTotalThreadsPerThreadgroup), execution width = \(pathPipelineState.threadExecutionWidth), memory length = \(pathPipelineState.staticThreadgroupMemoryLength)")
+            print("GPU pipeline info: threads per threadgroup = \(pathPipelineState.maxTotalThreadsPerThreadgroup), execution width = \(pathPipelineState.threadExecutionWidth)")
         }
 
         numPathsAtATime = numConcurrentPathThreads * numPathsPerThread
@@ -172,6 +172,7 @@ class PathCompute {
             }
             if c > restOfChoicesLength {
                 numGatesCommon = i  // Don't include current gate
+                break
             }
         }
 

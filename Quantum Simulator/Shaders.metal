@@ -38,7 +38,7 @@ pathKernel(constant MeasureConfig &measureConfig [[buffer(0)]],
     SumPair sumTotal = SumPair { float4(0, 0, 0, 0) };
 
    // Calculate common path prefix
-    uint choices = dispatchConfig.restOfChoices ^ id;
+    uint choices = 0xffffffff ^ dispatchConfig.restOfChoices ^ id;
     uint matchMask = measureConfig.matchMask;  // TODO: Larger measurements
     uint matchMeasure = measureConfig.matchMeasure;
     uint state = 0;  // TODO: Larger state

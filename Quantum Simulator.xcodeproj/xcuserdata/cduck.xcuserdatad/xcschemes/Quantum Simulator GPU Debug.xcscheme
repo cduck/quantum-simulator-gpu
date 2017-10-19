@@ -66,7 +66,7 @@
       <CommandLineArguments>
          <CommandLineArgument
             argument = "/Users/cduck/dev/Quantum/simulation/simple.circuit"
-            isEnabled = "YES">
+            isEnabled = "NO">
          </CommandLineArgument>
       </CommandLineArguments>
       <AdditionalOptions>

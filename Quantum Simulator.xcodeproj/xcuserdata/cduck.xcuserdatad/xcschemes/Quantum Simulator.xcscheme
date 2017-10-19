@@ -66,12 +66,12 @@
       </BuildableProductRunnable>
       <CommandLineArguments>
          <CommandLineArgument
-            argument = "/Users/cduck/dev/Quantum/simulation/simple.circuit"
-            isEnabled = "YES">
+            argument = "/Users/cduck/dev/Quantum/simulation/hadamard32.circuit"
+            isEnabled = "NO">
          </CommandLineArgument>
          <CommandLineArgument
             argument = "3"
-            isEnabled = "YES">
+            isEnabled = "NO">
          </CommandLineArgument>
       </CommandLineArguments>
       <AdditionalOptions>

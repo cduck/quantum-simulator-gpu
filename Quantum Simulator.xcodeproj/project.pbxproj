@@ -30,7 +30,7 @@
 		934D5F561F920C0500F9FEAE /* ShaderTypes.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = ShaderTypes.h; sourceTree = "<group>"; };
 		934D5F571F920C1300F9FEAE /* Shaders.metal */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.metal; path = Shaders.metal; sourceTree = "<group>"; };
 		934D5F591F920F1900F9FEAE /* BridgeHeader.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = BridgeHeader.h; sourceTree = "<group>"; };
-		934EEEE61F8C689F00C9C3A0 /* Quantum Simulator */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = "Quantum Simulator"; sourceTree = BUILT_PRODUCTS_DIR; };
+		934EEEE61F8C689F00C9C3A0 /* qsim */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = qsim; sourceTree = BUILT_PRODUCTS_DIR; };
 		934EEEE91F8C689F00C9C3A0 /* main.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = main.swift; sourceTree = "<group>"; };
 		939705D11F951570004A498D /* loadCircuit.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = loadCircuit.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
@@ -57,7 +57,7 @@
 		934EEEE71F8C689F00C9C3A0 /* Products */ = {
 			isa = PBXGroup;
 			children = (
-				934EEEE61F8C689F00C9C3A0 /* Quantum Simulator */,
+				934EEEE61F8C689F00C9C3A0 /* qsim */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -92,7 +92,7 @@
 			);
 			name = "Quantum Simulator";
 			productName = Metal2Test;
-			productReference = 934EEEE61F8C689F00C9C3A0 /* Quantum Simulator */;
+			productReference = 934EEEE61F8C689F00C9C3A0 /* qsim */;
 			productType = "com.apple.product-type.tool";
 		};
 /* End PBXNativeTarget section */
@@ -253,7 +253,8 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				CODE_SIGN_STYLE = Automatic;
-				PRODUCT_NAME = "$(TARGET_NAME)";
+				MACOSX_DEPLOYMENT_TARGET = 10.11;
+				PRODUCT_NAME = qsim;
 				SWIFT_OBJC_BRIDGING_HEADER = "Quantum Simulator/BridgeHeader.h";
 				SWIFT_VERSION = 4.0;
 			};
@@ -263,7 +264,8 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				CODE_SIGN_STYLE = Automatic;
-				PRODUCT_NAME = "$(TARGET_NAME)";
+				MACOSX_DEPLOYMENT_TARGET = 10.11;
+				PRODUCT_NAME = qsim;
 				SWIFT_OBJC_BRIDGING_HEADER = "Quantum Simulator/BridgeHeader.h";
 				SWIFT_VERSION = 4.0;
 			};
